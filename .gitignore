@@ -155,6 +155,8 @@ cython_debug/
 # Ignore .wav files
 *.wav
 
+tf_Wav_reader.py
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
