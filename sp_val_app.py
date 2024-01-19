@@ -22,7 +22,8 @@ speaker_names = [
     "Jens_Stoltenberg",
     "Julia_Gillard",
     "Magaret_Tarcher",
-    "Nelson_Mandela"
+    "Nelson_Mandela"#,
+    #"unknown"
 ]
 
 def start_recording():
@@ -42,11 +43,17 @@ def stop_recording():
 def verify_speaker():
     # Load the saved model
         # Load the recorded audio
-    fs, audio = read('output.wav')
+    sound_file = os.path.join('.//dataset//audio//Benjamin_Netanyau', "1.wav")
 
+    #audio, sample_rate = librosa.load(sound_file)
+    audio, sample_rate = librosa.load("output.wav")
+
+    claimed_speaker_name = speaker_name_entry.get()
+    claimed_speaker_index = speaker_names.index(claimed_speaker_name)
+    
     # Extract MFCC features from the audio
     features = []
-    mfccs = librosa.feature.mfcc(y=audio, sr=fs, n_mfcc=10)
+    mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=10)
     features.append(mfccs.T)
     features = np.array(features)
     
@@ -55,7 +62,7 @@ def verify_speaker():
     model.load_state_dict(torch.load('lstm_model.pth'))
     model.eval()
 
-
+    max_confidence = 0
 
     # Use the model to predict the speaker
     with torch.no_grad():
@@ -63,18 +70,24 @@ def verify_speaker():
         preds = model(features_tensor)
         _, predicted = torch.max(preds.data, 1)
 
+        # Apply softmax to the outputs to get probabilities
+        probs = torch.nn.functional.softmax(preds, dim=1)
+        claimed_speaker_confidence = probs[0][claimed_speaker_index].item()
+        # Get the maximum confidence
+        #max_confidence = torch.max(preds.data)
     # Get the claimed speaker name from the text field
-    claimed_speaker_name = speaker_name_entry.get()
-
+    
     # Load the trained LabelEncoder from a file
-    with open('encoder.pkl', 'rb') as f:
+    with open('encoder_lstm.pkl', 'rb') as f:
         encoder = pickle.load(f)
     
     # Get the predicted speaker name
     predicted_speaker_name = encoder.inverse_transform(predicted.cpu().numpy())
+    
+    threshold = 0.5
 
-    # Check if the predicted speaker name matches the claimed speaker name
-    if predicted_speaker_name == claimed_speaker_name:
+    # Check if the predicted speaker name matches the claimed speaker name and the maximum confidence is below the threshold
+    if claimed_speaker_confidence >= threshold and predicted_speaker_name == claimed_speaker_name:
         messagebox.showinfo("Information", "The claim is verified. The speaker is indeed " + claimed_speaker_name)
     else:
         messagebox.showinfo("Information", "The claim is not verified. The speaker is not " + claimed_speaker_name)
