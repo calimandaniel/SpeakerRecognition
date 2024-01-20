@@ -4,7 +4,7 @@ import sounddevice as sd
 import numpy as np
 from scipy.io.wavfile import write, read
 import torch
-import torchaudio
+from tkinter import ttk
 import librosa
 from cnn_model import CNN
 from lstm_model import LSTMModel
@@ -17,35 +17,48 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Label of the speakers in the dataset
+# !!! Adjust the list of speaker names to match the speakers in your dataset
 speaker_names = [
     "Benjamin_Netanyau",
     "Jens_Stoltenberg",
     "Julia_Gillard",
     "Magaret_Tarcher",
-    "Nelson_Mandela"#,
-    #"unknown"
+    "Nelson_Mandela",
+    "Vilma"
 ]
 
 def start_recording():
+    """
+    This function starts the audio recording for a specified duration and sample rate.
+    """
     global audio
-    duration = 10  # seconds
+    duration = 5  # seconds
     fs = 16000  # Sample rate
     audio = sd.rec(int(duration * fs), samplerate=fs, channels=1)
-    #sd.wait()  # Wait until recording is finished
-    #messagebox.showinfo("Information","Start Recording")
 
 def stop_recording():
+    """
+    This function stops the audio recording, saves the recorded audio to a file, and displays a message box.
+    """
     global audio
     sd.stop()  # Stop the recording
     write('output.wav', 16000, audio)  # Save the audio to a file
     messagebox.showinfo("Information","Stop Recording")
 
 def verify_speaker():
-    # Load the saved model
-        # Load the recorded audio
-    sound_file = os.path.join('.//dataset//audio//Benjamin_Netanyau', "1.wav")
+    """
+    This function verifies the identity of a speaker using a pre-trained LSTM model.
 
-    #audio, sample_rate = librosa.load(sound_file)
+    The function performs the following steps:
+    1. Loads an audio file named "output.wav".
+    2. Retrieves the claimed speaker's name from a GUI entry field and finds the corresponding index in the list of known speaker names.
+    3. Extracts MFCC features from the audio file.
+    4. Creates an instance of a LSTM model, loads the model parameters from a file named 'lstm_model.pth', and sets the model to evaluation mode.
+    5. Uses the model to predict the speaker and applies softmax to the outputs to get probabilities.
+    6. Loads the trained LabelEncoder from a file to get the predicted speaker name.
+    7. Checks if the predicted speaker name matches the claimed speaker name and the maximum confidence is below a certain threshold.
+    8. Displays a message box with the verification result.
+    """
     audio, sample_rate = librosa.load("output.wav")
 
     claimed_speaker_name = speaker_name_entry.get()
@@ -62,8 +75,6 @@ def verify_speaker():
     model.load_state_dict(torch.load('lstm_model.pth'))
     model.eval()
 
-    max_confidence = 0
-
     # Use the model to predict the speaker
     with torch.no_grad():
         features_tensor = torch.tensor(features).float().to(device)
@@ -73,9 +84,6 @@ def verify_speaker():
         # Apply softmax to the outputs to get probabilities
         probs = torch.nn.functional.softmax(preds, dim=1)
         claimed_speaker_confidence = probs[0][claimed_speaker_index].item()
-        # Get the maximum confidence
-        #max_confidence = torch.max(preds.data)
-    # Get the claimed speaker name from the text field
     
     # Load the trained LabelEncoder from a file
     with open('encoder_lstm.pkl', 'rb') as f:
@@ -92,21 +100,34 @@ def verify_speaker():
     else:
         messagebox.showinfo("Information", "The claim is not verified. The speaker is not " + claimed_speaker_name)
 
+# Create the main window and set its properties
 window = tk.Tk()
+window.title("Speaker Verification App")
+window.geometry("400x300")
+window.configure(bg='light blue')
 
-start_button = tk.Button(window, text="Start Recording", command=start_recording)
-start_button.pack()
+# Create a style object
+style = ttk.Style()
 
-stop_button = tk.Button(window, text="Stop Recording", command=stop_recording)
-stop_button.pack()
+# Configure the style of the buttons
+style.configure('TButton', font=('calibri', 10, 'bold'), borderwidth='4')
 
-speaker_name_label = tk.Label(window, text="Claimed Speaker Name")
-speaker_name_label.pack()
+# Configure the style of the labels
+style.configure('TLabel', font=('calibri', 12, 'bold'), background='light blue')
 
-speaker_name_entry = tk.Entry(window)
-speaker_name_entry.pack()
+start_button = ttk.Button(window, text="Start Recording", command=start_recording)
+start_button.pack(pady=10)
 
-verify_button = tk.Button(window, text="Verify Speaker", command=verify_speaker)
-verify_button.pack()
+stop_button = ttk.Button(window, text="Stop Recording", command=stop_recording)
+stop_button.pack(pady=10)
+
+speaker_name_label = ttk.Label(window, text="Claimed Speaker Name")
+speaker_name_label.pack(pady=10)
+
+speaker_name_entry = ttk.Entry(window)
+speaker_name_entry.pack(pady=10)
+
+verify_button = ttk.Button(window, text="Verify Speaker", command=verify_speaker)
+verify_button.pack(pady=10)
 
 window.mainloop()
