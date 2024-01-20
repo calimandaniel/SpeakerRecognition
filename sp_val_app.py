@@ -20,10 +20,10 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 speaker_names = [
     "Benjamin_Netanyau",
     "Jens_Stoltenberg",
-    "Julia_Gillard",
+    "Julia_Gillard",    
     "Magaret_Tarcher",
-    "Nelson_Mandela"#,
-    #"unknown"
+    "Nelson_Mandela",
+    "Vilma"
 ]
 
 def start_recording():
@@ -43,10 +43,10 @@ def stop_recording():
 def verify_speaker():
     # Load the saved model
         # Load the recorded audio
-    sound_file = os.path.join('.//dataset//audio//Benjamin_Netanyau', "1.wav")
+    sound_file = os.path.join('.//dataset_cnn//audio//Vilma', "Vilma_134.wav")
 
-    #audio, sample_rate = librosa.load(sound_file)
-    audio, sample_rate = librosa.load("output.wav")
+    audio, sample_rate = librosa.load(sound_file)
+    #audio, sample_rate = librosa.load("output.wav")
 
     claimed_speaker_name = speaker_name_entry.get()
     claimed_speaker_index = speaker_names.index(claimed_speaker_name)
